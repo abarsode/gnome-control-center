@@ -22,7 +22,8 @@ dbus_built_sources =	manager.c manager.h \
 			service.c service.h
 
 connection_editor_sources = 	net-connection-editor.c \
-				net-connection-editor.h
+				net-connection-editor.h \
+				service.h
 
 tether_sources = 	net-tethering.c \
 			net-tethering.h
