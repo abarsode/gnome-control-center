@@ -2311,13 +2311,13 @@ cc_setup_hotspot (GtkButton *button, gpointer user_data)
                                   G_CALLBACK (cc_ethernet_tether_switch_toggle),
                                   priv);
 
-                g_signal_connect_swapped (GTK_ENTRY (WID (priv->builder, "entry_ssid")),
-                                          "notify::text-length",
+                g_signal_connect_swapped (WID (priv->builder, "entry_ssid"),
+                                          "changed",
                                           G_CALLBACK (entry_fields_text_changed),
                                           priv);
 
-                g_signal_connect_swapped (GTK_ENTRY (WID (priv->builder, "entry_passphrase")),
-                                          "notify::text-length",
+                g_signal_connect_swapped (WID (priv->builder, "entry_passphrase"),
+                                          "changed",
                                           G_CALLBACK (entry_fields_text_changed),
                                           priv);
         }

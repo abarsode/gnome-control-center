@@ -326,19 +326,37 @@ proxy_setup_entry (NetConnectionEditor *editor, gchar *method)
 
         if (!g_strcmp0 (method, "direct")) {
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_url")));
-                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "http_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "http_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "https_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "https_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_v4")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_v5")));
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_excludes")));
 
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_url")));
-                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_http_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_https_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_socks_servers")));
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_excludes")));
 
         } else if (!g_strcmp0 (method, "auto")) {
                 gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_url")));
                 gtk_widget_show (GTK_WIDGET (WID (editor->builder, "proxy_url")));
 
-                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_servers")));
-                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_http_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_https_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_socks_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "http_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "http_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "https_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "https_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_servers")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_port")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_v4")));
+                gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "socks_proxy_v5")));
 
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_excludes")));
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_excludes")));
@@ -346,13 +364,22 @@ proxy_setup_entry (NetConnectionEditor *editor, gchar *method)
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "label_url")));
                 gtk_widget_hide (GTK_WIDGET (WID (editor->builder, "proxy_url")));
 
-                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_servers")));
-                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "proxy_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_http_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_https_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_socks_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "http_proxy_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "http_proxy_port")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "https_proxy_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "https_proxy_port")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "socks_proxy_servers")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "socks_proxy_port")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "socks_proxy_v4")));
+                gtk_widget_show (GTK_WIDGET (WID (editor->builder, "socks_proxy_v5")));
 
                 gtk_widget_show (GTK_WIDGET (WID (editor->builder, "label_excludes")));
                 gtk_widget_show (GTK_WIDGET (WID (editor->builder, "proxy_excludes")));
         } else
-                g_warning ("Unknown method for proxy"); 
+                g_warning ("Unknown method for proxy");
 }
 
 static void
@@ -376,7 +403,9 @@ proxy_method_changed (GtkComboBox *combo, gpointer user_data)
                 }
         } else {
                 proxy_setup_entry (editor, "manual");
-                if (gtk_entry_get_text_length (GTK_ENTRY (WID (editor->builder, "proxy_servers"))) > 0) {
+                if (gtk_entry_get_text_length (GTK_ENTRY (WID (editor->builder, "http_proxy_servers"))) > 0
+                    || gtk_entry_get_text_length (GTK_ENTRY (WID (editor->builder, "https_proxy_servers"))) > 0
+                    || gtk_entry_get_text_length (GTK_ENTRY (WID (editor->builder, "socks_proxy_servers"))) > 0) {
                         editor->update_proxy = TRUE;
                         net_connection_editor_update_apply (editor);
                 }
@@ -404,7 +433,7 @@ proxy_url_text_changed (NetConnectionEditor *editor)
 }
 
 static void
-proxy_servers_text_changed (NetConnectionEditor *editor)
+http_proxy_servers_text_changed (NetConnectionEditor *editor)
 {
         GtkEntry *entry;
         guint16 len;
@@ -412,7 +441,47 @@ proxy_servers_text_changed (NetConnectionEditor *editor)
         if (g_strcmp0 (editor->proxy_method, "manual") != 0)
                 return;
 
-        entry = GTK_ENTRY (WID (editor->builder, "proxy_servers"));
+        entry = GTK_ENTRY (WID (editor->builder, "http_proxy_servers"));
+
+        len = gtk_entry_get_text_length (entry);
+        if (len == 0)
+                editor->update_proxy = FALSE;
+        else
+                editor->update_proxy = TRUE;
+
+        net_connection_editor_update_apply (editor);
+}
+
+static void
+https_proxy_servers_text_changed (NetConnectionEditor *editor)
+{
+        GtkEntry *entry;
+        guint16 len;
+
+        if (g_strcmp0 (editor->proxy_method, "manual") != 0)
+                return;
+
+        entry = GTK_ENTRY (WID (editor->builder, "https_proxy_servers"));
+
+        len = gtk_entry_get_text_length (entry);
+        if (len == 0)
+                editor->update_proxy = FALSE;
+        else
+                editor->update_proxy = TRUE;
+
+        net_connection_editor_update_apply (editor);
+}
+
+static void
+socks_proxy_servers_text_changed (NetConnectionEditor *editor)
+{
+        GtkEntry *entry;
+        guint16 len;
+
+        if (g_strcmp0 (editor->proxy_method, "manual") != 0)
+                return;
+
+        entry = GTK_ENTRY (WID (editor->builder, "socks_proxy_servers"));
 
         len = gtk_entry_get_text_length (entry);
         if (len == 0)
@@ -441,6 +510,48 @@ proxy_excludes_text_changed (NetConnectionEditor *editor)
         editor->update_proxy = TRUE;
 
         net_connection_editor_update_apply (editor);
+}
+
+static void
+parse_server_entry (const gchar *server_entry, gchar **protocol, gchar **server,
+                    gint *port)
+{
+        gchar **host, **url;
+        guint host_part = 0;
+
+        if (!server_entry)
+                return;
+
+        /* proto://server.example.com:911 */
+        host = g_strsplit (server_entry, "://", -1);
+        if (g_strv_length (host) < 1) {
+                goto host;
+        } else if (g_strv_length (host) > 1 && host[1]) {
+                /* Got protocol and domain[:port] */
+                (*protocol) = g_strdup (host[0]);
+                host_part = 1;
+        } else {
+                /* Got domain[:port]
+                 *
+                 * According to the GSettings schema for org.gnome.system.proxy
+                 * SOCKS is used by default where a proxy for a specific
+                 * protocol is not set, so default to settings socks when we
+                 * get an entry from connman without a protocol set.
+                 */
+                (*protocol) = g_strdup ("socks");
+        }
+
+        url = g_strsplit (host[host_part], ":", -1);
+        if (g_strv_length (url) > 1 && url[1]) {
+                (*port) = g_ascii_strtoull (url[1], NULL, 0);
+        } else {
+                (*port) = 0;
+        }
+        (*server) = g_strdup (url[0]);
+
+        g_strfreev (url);
+host:
+        g_strfreev (host);
 }
 
 void
@@ -485,8 +596,49 @@ editor_update_proxy (NetConnectionEditor *editor)
                 value = g_variant_lookup_value (proxy, "Excludes", G_VARIANT_TYPE_STRING_ARRAY);
                 excludes = (gchar **) g_variant_get_strv (value, NULL);
 
-                if (servers != NULL)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_servers")), g_strjoinv (",", (gchar **) servers));
+                if (servers != NULL) {
+                        gint i, port = 0;
+                        gchar *proto = NULL, *server = NULL;
+                        gsize num_servers;
+
+                        num_servers = g_strv_length (servers);
+
+                        for (i = 0; i < num_servers; i++) {
+                                parse_server_entry (servers[i], &proto, &server, &port);
+                                /* The UI only supports a single server for each
+                                 * protocol */
+                                if (g_strcmp0 (proto, "http") == 0) {
+                                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "http_proxy_servers")), server);
+                                        gtk_adjustment_set_value (GTK_ADJUSTMENT (WID (editor->builder, "adjustment_http_port")), (gdouble) port);
+
+                                        g_free (server);
+                                        g_free (proto);
+                                        port = 0;
+                                } else if (g_strcmp0 (proto, "https") == 0) {
+                                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "https_proxy_servers")), server);
+                                        gtk_adjustment_set_value (GTK_ADJUSTMENT (WID (editor->builder, "adjustment_https_port")), (gdouble) port);
+
+                                        g_free (server);
+                                        g_free (proto);
+                                        port = 0;
+                                } else if (g_strcmp0 (proto, "socks") == 0 ||
+                                           g_strcmp0 (proto, "socks4") == 0 ||
+                                           g_strcmp0 (proto, "socks5") == 0) {
+                                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "socks_proxy_servers")), server);
+                                        gtk_adjustment_set_value (GTK_ADJUSTMENT (WID (editor->builder, "adjustment_socks_port")), (gdouble) port);
+                                        if (g_strcmp0 (proto, "socks4") == 0)
+                                                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (WID (editor->builder, "socks_proxy_v4")), TRUE);
+                                        else
+                                                gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (WID (editor->builder, "socks_proxy_v5")), TRUE);
+
+                                        g_free (server);
+                                        g_free (proto);
+                                        port = 0;
+                                }
+                        }
+
+                        g_free (servers);
+                }
 
                 if (excludes != NULL)
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_excludes")), g_strjoinv (",", (gchar **) excludes));
@@ -529,6 +681,44 @@ service_set_proxy (GObject      *source,
 }
 
 static void
+append_string (GString *gstring, const gchar *append, gint port)
+{
+        gchar *str;
+
+        g_debug ("appending proxy url:%s port:%d", append, port);
+
+        if (gstring->len > 0 && port > 0)
+                str = g_strdup_printf (" %s:%d", append, port);
+        else if (gstring->len > 0)
+                str = g_strdup_printf (" %s", append);
+        else if (port > 0)
+                str = g_strdup_printf ("%s:%d", append, port);
+        else
+                str = g_strdup (append);
+
+        g_string_append (gstring, str);
+        g_free (str);
+}
+
+static gboolean
+has_protocol (const gchar *url)
+{
+        gboolean has = FALSE;
+        gchar **components;
+
+        components = g_strsplit (url, "://", 0);
+
+        if (g_strv_length (components) > 1 && components[0]) {
+                has = TRUE;
+                g_debug ("url %s has protocol %s", url, components[0]);
+        }
+
+        g_strfreev (components);
+
+        return has;
+}
+
+static void
 editor_set_proxy (NetConnectionEditor *editor)
 {
         GtkTreeModel *model;
@@ -541,7 +731,9 @@ editor_set_proxy (NetConnectionEditor *editor)
         gchar *str;
         gchar **servers = NULL;
         gchar **excludes = NULL;
+        gint port;
         GVariant *value;
+        GString *proxy_list;
 
         model =  gtk_tree_row_reference_get_model (editor->service_row);
         tree_path = gtk_tree_row_reference_get_path (editor->service_row);
@@ -563,11 +755,53 @@ editor_set_proxy (NetConnectionEditor *editor)
         } else {
                 g_variant_builder_add (proxyconf,"{sv}", "Method", g_variant_new_string ("manual"));
 
-                str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "proxy_servers")));
-                if (str) {
-                        servers = g_strsplit (str, ",", -1);
+                proxy_list = g_string_new ("");
+                str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "http_proxy_servers")));
+                port = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (WID (editor->builder, "http_proxy_port")));
+                if (str && strlen (str)) {
+                        if (has_protocol (str))
+                                append_string (proxy_list, str, port);
+                        else {
+                                gchar *url = g_strdup_printf ("http://%s", str);
+                                append_string (proxy_list, (const gchar *)url, port);
+                                g_free (url);
+                        }
+                }
+
+                str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "https_proxy_servers")));
+                port = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (WID (editor->builder, "https_proxy_port")));
+                if (str && strlen (str)) {
+                        if (has_protocol (str))
+                                append_string (proxy_list, str, port);
+                        else {
+                                gchar *url = g_strdup_printf ("https://%s", str);
+                                append_string (proxy_list, (const gchar *)url, port);
+                                g_free (url);
+                        }
+                }
+
+                str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "socks_proxy_servers")));
+                port = gtk_spin_button_get_value_as_int (GTK_SPIN_BUTTON (WID (editor->builder, "socks_proxy_port")));
+                if (str && strlen (str)) {
+                        if (has_protocol (str))
+                                append_string (proxy_list, str, port);
+                        else {
+                                gchar *url;
+                                if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (WID (editor->builder, "socks_proxy_v4"))))
+                                        url = g_strdup_printf ("socks4://%s", str);
+                                else
+                                        /* default to SOCKS5 */
+                                        url = g_strdup_printf ("socks5://%s", str);
+                                append_string (proxy_list, (const gchar *)url, port);
+                                g_free (url);
+                        }
+                }
+
+                if (proxy_list->len > 0) {
+                        servers = g_strsplit (proxy_list->str, " ", -1);
                         g_variant_builder_add (proxyconf,"{sv}", "Servers", g_variant_new_strv ((const gchar * const *) servers, -1));
                 }
+                g_string_free (proxy_list, TRUE);
 
                 str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "proxy_excludes")));
                 if (str) {
@@ -586,7 +820,7 @@ editor_set_proxy (NetConnectionEditor *editor)
                                    editor);
 
         g_variant_builder_unref (proxyconf);
- 
+
         if (servers)
                 g_strfreev (servers);
 
@@ -1506,18 +1740,53 @@ net_connection_editor_init (NetConnectionEditor *editor)
                           G_CALLBACK (proxy_method_changed),
                           editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "proxy_url")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "proxy_url"),
+                                  "changed",
                                   G_CALLBACK (proxy_url_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "proxy_servers")),
-                                  "notify::text-length",
-                                  G_CALLBACK (proxy_servers_text_changed),
+        g_signal_connect_swapped (WID (editor->builder, "http_proxy_servers"),
+                                  "changed",
+                                  G_CALLBACK (http_proxy_servers_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "proxy_excludes")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "adjustment_http_port"),
+                                  "value-changed",
+                                  G_CALLBACK (http_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "https_proxy_servers"),
+                                  "changed",
+                                  G_CALLBACK (https_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "adjustment_https_port"),
+                                  "value-changed",
+                                  G_CALLBACK (https_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "socks_proxy_servers"),
+                                  "changed",
+                                  G_CALLBACK (socks_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "adjustment_socks_port"),
+                                  "value-changed",
+                                  G_CALLBACK (socks_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "socks_proxy_v4"),
+                                  "toggled",
+                                  G_CALLBACK (socks_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "socks_proxy_v5"),
+                                  "toggled",
+                                  G_CALLBACK (socks_proxy_servers_text_changed),
+                                  editor);
+
+        g_signal_connect_swapped (WID (editor->builder, "proxy_excludes"),
+                                  "changed",
                                   G_CALLBACK (proxy_excludes_text_changed),
                                   editor);
 
@@ -1526,18 +1795,18 @@ net_connection_editor_init (NetConnectionEditor *editor)
                           G_CALLBACK (ipv4_method_changed),
                           editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv4_address")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv4_address"),
+                                  "changed",
                                   G_CALLBACK (ipv4_address_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv4_netmask"),
+                                  "changed",
                                   G_CALLBACK (ipv4_address_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv4_gateway"),
+                                  "changed",
                                   G_CALLBACK (ipv4_address_text_changed),
                                   editor);
 
@@ -1546,27 +1815,27 @@ net_connection_editor_init (NetConnectionEditor *editor)
                           G_CALLBACK (ipv6_method_changed),
                           editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv6_address")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv6_address"),
+                                  "changed",
                                   G_CALLBACK (ipv6_address_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv6_prefix"),
+                                  "changed",
                                   G_CALLBACK (ipv6_address_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "ipv6_gateway"),
+                                  "changed",
                                   G_CALLBACK (ipv6_address_text_changed),
                                   editor);
 
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "entry_domains")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "entry_domains"),
+                                  "changed",
                                   G_CALLBACK (domains_text_changed),
                                   editor);
-        g_signal_connect_swapped (GTK_ENTRY (WID (editor->builder, "entry_nameservers")),
-                                  "notify::text-length",
+        g_signal_connect_swapped (WID (editor->builder, "entry_nameservers"),
+                                  "changed",
                                   G_CALLBACK (nameservers_text_changed),
                                   editor);
 }
