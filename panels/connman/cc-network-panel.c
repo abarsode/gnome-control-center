@@ -110,7 +110,7 @@ static gboolean cc_service_state_to_icon (const gchar *state)
 static const gchar *cc_service_security_to_string (const gchar **security)
 {
         if (security == NULL)
-                return "none";
+                return _("none");
         else
                 return security[0];
 }
@@ -133,18 +133,18 @@ static const gchar *cc_service_security_to_icon (const gchar **security)
 static const gchar *cc_service_strength_to_string (const gchar *type, const gchar strength)
 {
         if (!g_strcmp0 (type, "ethernet") || !g_strcmp0 (type, "bluetooth"))
-                return "Excellent";
+                return _("Excellent");
 
         if (strength > 80)
-                return "Excellent";
+                return _("Excellent");
         else if (strength > 55)
-                return "Good";
+                return _("Good");
         else if (strength > 30)
-                return "ok";
+                return _("ok");
         else if (strength > 5)
-                return "weak";
+                return _("weak");
         else
-                return "n/a";
+                return _("n/a");
 }
 
 static const gchar *cc_service_type_to_icon (const gchar *type, gchar strength)

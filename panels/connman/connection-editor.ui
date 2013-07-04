@@ -237,7 +237,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">Good</property>
+                        <property name="label">Good</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -369,7 +369,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">WPA</property>
+                        <property name="label">WPA</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -391,7 +391,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">192.168.100.1</property>
+                        <property name="label">192.168.100.1</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -413,7 +413,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">00:11:22:33:44:55</property>
+                        <property name="label">00:11:22:33:44:55</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -435,7 +435,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">192.168.100.1</property>
+                        <property name="label">192.168.100.1</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -457,7 +457,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">192.168.100.1</property>
+                        <property name="label">192.168.100.1</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -494,7 +494,7 @@
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="xalign">0</property>
-                        <property name="label" translatable="yes">eth0</property>
+                        <property name="label">eth0</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Enter Value&gt; 10"/>
                           <attribute name="weight" value="semibold"/>
@@ -538,7 +538,7 @@
                   <object class="GtkLabel" id="label18">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 1</property>
+                    <property name="label">page 1</property>
                   </object>
                   <packing>
                     <property name="tab_fill">False</property>
@@ -884,7 +884,7 @@
                             <property name="can_focus">False</property>
                             <child>
                               <object class="GtkRadioButton" id="socks_proxy_v4">
-                                <property name="label" translatable="yes">SOCKS v4</property>
+                                <property name="label">SOCKS v4</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -900,7 +900,7 @@
                             </child>
                             <child>
                               <object class="GtkRadioButton" id="socks_proxy_v5">
-                                <property name="label" translatable="yes">SOCKS v5</property>
+                                <property name="label">SOCKS v5</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
@@ -938,7 +938,7 @@
                   <object class="GtkLabel" id="label2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 2</property>
+                    <property name="label">page 2</property>
                   </object>
                   <packing>
                     <property name="position">1</property>
@@ -1108,7 +1108,7 @@
                   <object class="GtkLabel" id="label3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 3</property>
+                    <property name="label">page 3</property>
                   </object>
                   <packing>
                     <property name="position">2</property>
@@ -1316,7 +1316,7 @@
                   <object class="GtkLabel" id="label12">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 4</property>
+                    <property name="label">page 4</property>
                   </object>
                   <packing>
                     <property name="position">3</property>
@@ -1374,7 +1374,7 @@
                   <object class="GtkLabel" id="label13">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 5</property>
+                    <property name="label">page 5</property>
                   </object>
                   <packing>
                     <property name="position">4</property>
@@ -1432,7 +1432,7 @@
                   <object class="GtkLabel" id="label15">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">page 6</property>
+                    <property name="label">page 6</property>
                   </object>
                   <packing>
                     <property name="position">5</property>
