@@ -1632,11 +1632,25 @@ editor_set_nameservers (NetConnectionEditor *editor)
                             -1);
 
         str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")));
-        if (str)
-                nameservers = g_strsplit (str, ",", -1);
+        if (str) {
+                int i, length, size;
+                char **split_values;
+
+                split_values = g_strsplit_set (str, ", ;:", -1);
+                length = g_strv_length (split_values);
+                nameservers = g_new0 (char *, length + 1);
+                size = 0;
+
+                for (i = 0; i < length; i++) {
+                        g_strstrip (split_values[i]);
+                        if (split_values[i][0] != NULL)
+                                nameservers[size++] = g_strdup (split_values[i]);
+                }
+
+                g_strfreev (split_values);
+        }
 
         value = g_variant_new_strv ((const gchar * const *) nameservers, -1);
-
         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")), "");
 
         service_call_set_property (service,
@@ -1645,6 +1659,7 @@ editor_set_nameservers (NetConnectionEditor *editor)
                                    NULL,
                                    service_set_nameservers,
                                    editor);
+        g_strfreev (nameservers);
 }
 
 /* Nameservers section Ends */
