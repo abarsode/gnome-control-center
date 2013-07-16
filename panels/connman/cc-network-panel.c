@@ -107,7 +107,7 @@ static gboolean cc_service_state_to_icon (const gchar *state)
                 return FALSE;
 }
 
-static const gchar *cc_service_security_to_string (const gchar **security)
+static const gchar *cc_service_security_to_string (gchar **security)
 {
         if (security == NULL)
                 return _("none");
@@ -115,7 +115,7 @@ static const gchar *cc_service_security_to_string (const gchar **security)
                 return security[0];
 }
 
-static const gchar *cc_service_security_to_icon (const gchar **security)
+static const gchar *cc_service_security_to_icon (gchar **security)
 {
         if (security == NULL)
                 return NULL;
@@ -808,11 +808,11 @@ cc_add_technology_wifi (const gchar         *path,
                                                       GTK_ICON_SIZE_BUTTON);
         }
 
-        if (g_variant_lookup (properties, "TetheringIdentifier", "s", &str)) {
+        if (g_variant_lookup (properties, "TetheringIdentifier", "&s", &str)) {
                 gtk_entry_set_text (GTK_ENTRY (WID (priv->builder, "entry_ssid")), str);
         }
 
-        if (g_variant_lookup (properties, "TetheringPassphrase", "s", &str)) {
+        if (g_variant_lookup (properties, "TetheringPassphrase", "&s", &str)) {
                 gtk_entry_set_text (GTK_ENTRY (WID (priv->builder, "entry_passphrase")), str);
         }
 }
@@ -1156,12 +1156,9 @@ cc_add_technology (const gchar          *path,
                    GVariant             *properties,
                    CcNetworkPanel       *panel)
 {
-        const gchar *type;
-        gboolean ret;
+        gchar *type;
 
-        ret = g_variant_lookup (properties, "Type", "s", &type);
-
-        if (!ret)
+        if (!g_variant_lookup (properties, "Type", "&s", &type))
                 return;
 
         if (!g_strcmp0 (type, "ethernet")) {
@@ -1359,6 +1356,7 @@ service_property_changed (Service *service,
         tree_path = gtk_tree_row_reference_get_path (row);
 
         ret = gtk_tree_model_get_iter ((GtkTreeModel *) liststore_services, &iter, tree_path);
+        gtk_tree_path_free (tree_path);
 
         if (!ret) {
                 g_printerr ("no liststore found");
@@ -1380,6 +1378,7 @@ service_property_changed (Service *service,
                                     COLUMN_STRENGTH_ICON, cc_service_type_to_icon (type, strength),
                                     -1);
                 details = TRUE;
+                g_free (type);
         } else if (!g_strcmp0 (property, "State")) {
                 state = g_variant_get_string (g_variant_get_variant (value), NULL);
 
@@ -1523,17 +1522,14 @@ cc_add_service (const gchar         *path,
         CcNetworkPanelPrivate *priv = panel->priv;
         GError *error = NULL;
 
-        GVariant *value = NULL;
         GtkListStore *liststore_services;
         GtkTreeIter iter;
         GtkTreePath *tree_path;
         GtkTreeRowReference *row;
 
         Service *service;
-        const gchar *name;
-        const gchar *state;
-        const gchar **security = NULL;
-        const gchar *type;
+        gchar *name, *state, *type;
+        gchar **security = NULL;
         gint prop_id;
         gint id;
 
@@ -1548,18 +1544,11 @@ cc_add_service (const gchar         *path,
 
         gtk_list_store_append (liststore_services, &iter);
 
-        value = g_variant_lookup_value (properties, "Name", G_VARIANT_TYPE_STRING);
-        if (value == NULL)
+        if (!g_variant_lookup (properties, "Name", "s", &name))
                 name = g_strdup ("Connect to a Hidden Network");
-        else
-                name = g_variant_get_string (value, NULL);
 
-        value = g_variant_lookup_value (properties, "State", G_VARIANT_TYPE_STRING);
-        state = g_variant_get_string (value, NULL);
-
-        value = g_variant_lookup_value (properties, "Type", G_VARIANT_TYPE_STRING);
-        type = g_variant_get_string (value, NULL);
-
+        g_variant_lookup (properties, "State", "&s", &state);
+        g_variant_lookup (properties, "type", "&s", &type);
         g_variant_lookup (properties, "Favorite", "b", &favorite);
         g_variant_lookup (properties, "AutoConnect", "b", &autoconnect);
 
@@ -1570,15 +1559,11 @@ cc_add_service (const gchar         *path,
         proxy = g_variant_lookup_value (properties, "Proxy", G_VARIANT_TYPE_DICTIONARY);
         domains = g_variant_lookup_value (properties, "Domains", G_VARIANT_TYPE_STRING_ARRAY);
 
-        if (!g_strcmp0 (type, "wifi")) {
-                value = g_variant_lookup_value (properties, "Security", G_VARIANT_TYPE_STRING_ARRAY);
-                security = g_variant_get_strv (value, NULL);
-        }
+        if (!g_strcmp0 (type, "wifi"))
+                g_variant_lookup (properties, "Security", "as", &security);
 
-        if (!g_strcmp0 (type, "wifi") || !g_strcmp0 (type, "cellular")) {
-                value = g_variant_lookup_value (properties, "Strength", G_VARIANT_TYPE_BYTE);
-                strength = (gchar ) g_variant_get_byte (value);
-        }
+        if (!g_strcmp0 (type, "wifi") || !g_strcmp0 (type, "cellular"))
+                g_variant_lookup (properties, "Strength", "y", &strength);
 
         service = service_proxy_new_for_bus_sync (G_BUS_TYPE_SYSTEM,
                                                   G_DBUS_PROXY_FLAGS_NONE,
@@ -1590,7 +1575,7 @@ cc_add_service (const gchar         *path,
         if (error != NULL) {
                 g_warning ("could not get proxy for %s: %s", name,  error->message);
                 g_error_free (error);
-                return;
+                goto out;
         }
 
 
@@ -1604,11 +1589,11 @@ cc_add_service (const gchar         *path,
                             COLUMN_ICON, cc_service_state_to_icon (state),
                             COLUMN_PULSE, 0,
                             COLUMN_PULSE_ID, 0,
-                            COLUMN_NAME, g_strdup (name),
-                            COLUMN_STATE, g_strdup (state),
+                            COLUMN_NAME, name,
+                            COLUMN_STATE, state,
                             COLUMN_SECURITY_ICON, cc_service_security_to_icon (security),
                             COLUMN_SECURITY, cc_service_security_to_string (security),
-                            COLUMN_TYPE, g_strdup (type),
+                            COLUMN_TYPE, type,
                             COLUMN_STRENGTH_ICON, cc_service_type_to_icon (type, strength),
                             COLUMN_STRENGTH, cc_service_strength_to_string (type, strength),
                             COLUMN_FAVORITE, favorite,
@@ -1665,6 +1650,10 @@ cc_add_service (const gchar         *path,
 
         gtk_tree_path_free (tree_path);
         gtk_tree_row_reference_free (row);
+
+out:
+        g_free (name);
+        g_strfreev (security);
 }
 
 static void
@@ -2523,12 +2512,13 @@ set_service_name (GtkTreeViewColumn *col,
                   gpointer           user_data)
 {
         gboolean fav;
-        const gchar *name, *state;
-        gchar *uniname;
+        gchar *name, *state, *uniname;
 
-        gtk_tree_model_get (model, iter, COLUMN_FAVORITE, &fav, -1);
-        gtk_tree_model_get (model, iter, COLUMN_NAME, &name, -1);
-        gtk_tree_model_get (model, iter, COLUMN_STATE, &state, -1);
+        gtk_tree_model_get (model, iter,
+                            COLUMN_FAVORITE, &fav,
+                            COLUMN_NAME, &name,
+                            COLUMN_STATE, &state,
+                            -1);
 
         if ((g_strcmp0 (state, "ready") == 0) || (g_strcmp0 (state, "online") == 0))
                 uniname =  g_strdup_printf ("%s \u2713", name);
@@ -2550,6 +2540,8 @@ set_service_name (GtkTreeViewColumn *col,
         }
 
         g_free (uniname);
+        g_free (name);
+        g_free (state);
 }
 
 static void

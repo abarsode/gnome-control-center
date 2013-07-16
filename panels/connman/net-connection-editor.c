@@ -86,10 +86,10 @@ editor_update_details (NetConnectionEditor *editor)
         GtkTreePath *tree_path;
         GtkTreeIter iter;
 
-        const gchar *interface;
-        const gchar *signal_strength;
-        const gchar *security, *ipv4_address, *mac, *def_route;
-        gboolean autoconnect, favorite, ret;
+        gchar *interface;
+        gchar *signal_strength;
+        gchar *security, *security_upper, *ipv4_address, *mac, *def_route;
+        gboolean autoconnect, favorite;
         GVariant *ethernet, *ipv4, *nameservers;
         gchar **ns;
 
@@ -106,6 +106,7 @@ editor_update_details (NetConnectionEditor *editor)
                             COLUMN_IPV4, &ipv4,
                             COLUMN_NAMESERVERS, &nameservers,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         net_connection_editor_update_apply (editor);
 
@@ -120,38 +121,41 @@ editor_update_details (NetConnectionEditor *editor)
         }
 
         gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_strength")), signal_strength);
+        g_free (signal_strength);
 
-        gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_security")), g_ascii_strup (security, -1));
+        security_upper = g_ascii_strup (security, -1);
+        gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_security")), security_upper);
+        g_free (security);
+        g_free (security_upper);
 
-        ret = g_variant_lookup (ethernet, "Interface", "s", &interface);
-        if (ret)
+        if (g_variant_lookup (ethernet, "Interface", "&s", &interface))
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_interface")), interface);
         else
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_interface")), "--:--");
 
-        ret = g_variant_lookup (ethernet, "Address", "s", &mac);
-        if (ret)
+        if (g_variant_lookup (ethernet, "Address", "&s", &mac))
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_mac")), mac);
         else
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_mac")), "N/A");
 
-        ret = g_variant_lookup (ipv4, "Address", "s", &ipv4_address);
-        if (ret)
+        if (g_variant_lookup (ipv4, "Address", "&s", &ipv4_address))
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_ipv4_address")), ipv4_address);
         else
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_ipv4_address")), "N/A");
 
-        ret = g_variant_lookup (ipv4, "Gateway", "s", &def_route);
-        if (ret)
+        if (g_variant_lookup (ipv4, "Gateway", "&s", &def_route))
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_default_route")), def_route);
         else
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_default_route")), "N/A");
 
-        ns = g_variant_get_strv (nameservers, NULL);
-        if (ns && ns[0])
-                gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_dns")), g_strjoinv (",", (gchar **) ns));
-        else
+        ns = (gchar **) g_variant_get_strv (nameservers, NULL);
+        if (ns && ns[0]) {
+                gchar *label_dns = g_strjoinv (", ", ns);
+                gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_dns")), label_dns);
+                g_free (label_dns);
+        } else
                 gtk_label_set_text (GTK_LABEL (WID (editor->builder, "label_dns")), "N/A");
+        g_free (ns);
 
         editor->update_autoconnect = FALSE;
         net_connection_editor_update_apply (editor);
@@ -182,6 +186,7 @@ service_set_autoconnect (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 gchar *err = g_dbus_error_get_remote_error (error);
@@ -219,6 +224,7 @@ autoconnect_toggle (NetConnectionEditor *editor)
                             COLUMN_GDBUSPROXY, &service,
                             COLUMN_AUTOCONNECT, &autoconnect,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         ac = gtk_switch_get_active (GTK_SWITCH (WID (editor->builder, "switch_autoconnect")));
         if (ac == autoconnect)
@@ -247,6 +253,7 @@ editor_set_autoconnect (NetConnectionEditor *editor)
                             COLUMN_GDBUSPROXY, &service,
                             COLUMN_AUTOCONNECT, &autoconnect,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         ac = gtk_switch_get_active (GTK_SWITCH (WID (editor->builder, "switch_autoconnect")));
         if (ac == autoconnect)
@@ -284,6 +291,7 @@ service_removed (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_remove_finish (service, res, &error)) {
                 g_warning ("Could not remove Service: %s", error->message);
@@ -309,6 +317,7 @@ forget_service (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         service_call_remove (service,
                              NULL,
@@ -562,10 +571,9 @@ editor_update_proxy (NetConnectionEditor *editor)
         GtkTreePath *tree_path;
         GtkTreeIter iter;
 
-        gboolean ret;
-        gchar *method, *url;
+        gchar *method, *url, *entry_text;
         gchar **servers, **excludes;
-        GVariant *proxy, *value;
+        GVariant *proxy;
 
         model =  gtk_tree_row_reference_get_model (editor->service_row);
         tree_path = gtk_tree_row_reference_get_path (editor->service_row);
@@ -574,9 +582,9 @@ editor_update_proxy (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_PROXY, &proxy,
                             -1);
+        gtk_tree_path_free (tree_path);
 
-        ret = g_variant_lookup (proxy, "Method", "s", &method);
-        if (!ret)
+        if (!g_variant_lookup (proxy, "Method", "&s", &method))
                 method = "direct";
 
         proxy_setup_entry (editor, method);
@@ -585,16 +593,13 @@ editor_update_proxy (NetConnectionEditor *editor)
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_proxy_method")), 0);
         else  if (!g_strcmp0 (method, "auto")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_proxy_method")), 1);
-                g_variant_lookup (proxy, "URL", "s", &url);
+                g_variant_lookup (proxy, "URL", "&s", &url);
                 gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_url")), url);
         } else {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_proxy_method")), 2);
 
-                value = g_variant_lookup_value (proxy, "Servers", G_VARIANT_TYPE_STRING_ARRAY);
-                servers = (gchar **) g_variant_get_strv (value, NULL);
-
-                value = g_variant_lookup_value (proxy, "Excludes", G_VARIANT_TYPE_STRING_ARRAY);
-                excludes = (gchar **) g_variant_get_strv (value, NULL);
+                g_variant_lookup (proxy, "Servers", "as", &servers);
+                g_variant_lookup (proxy, "Excludes", "as", &excludes);
 
                 if (servers != NULL) {
                         gint i, port = 0;
@@ -637,11 +642,16 @@ editor_update_proxy (NetConnectionEditor *editor)
                                 }
                         }
 
-                        g_free (servers);
+                        g_strfreev (servers);
                 }
 
-                if (excludes != NULL)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_excludes")), g_strjoinv (",", (gchar **) excludes));
+                if (excludes != NULL) {
+                        entry_text = g_strjoinv (",", excludes);
+                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_excludes")), entry_text);
+                        g_free (entry_text);
+                        g_strfreev (excludes);
+                }
+
         }
 
         editor->update_proxy = FALSE;
@@ -672,6 +682,7 @@ service_set_proxy (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 g_warning ("Could not set proxy: %s", error->message);
@@ -742,7 +753,7 @@ editor_set_proxy (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
-
+        gtk_tree_path_free (tree_path);
 
         active = gtk_combo_box_get_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_proxy_method")));
         if (active == 0) {
@@ -925,7 +936,6 @@ editor_update_ipv4 (NetConnectionEditor *editor)
         GtkTreePath *tree_path;
         GtkTreeIter iter;
 
-        gboolean ret;
         gchar *method, *address, *netmask, *gateway;
         GVariant *ipv4;
 
@@ -936,9 +946,9 @@ editor_update_ipv4 (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_IPV4, &ipv4,
                             -1);
+        gtk_tree_path_free (tree_path);
 
-        ret = g_variant_lookup (ipv4, "Method", "s", &method);
-        if (!ret)
+        if (!g_variant_lookup (ipv4, "Method", "&s", &method))
                 method = "off";
 
         if (!g_strcmp0 (method, "off"))
@@ -946,60 +956,51 @@ editor_update_ipv4 (NetConnectionEditor *editor)
         else if (!g_strcmp0 (method, "dhcp")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv4_method")), 1);
 
-                ret = g_variant_lookup (ipv4, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), address);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), "");
 
-                ret = g_variant_lookup (ipv4, "Netmask", "s", &netmask);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Netmask", "&s", &netmask))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), netmask);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), "");
 
-                ret = g_variant_lookup (ipv4, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), gateway);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), "");
         } else if (!g_strcmp0 (method, "manual")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv4_method")), 2);
 
-                ret = g_variant_lookup (ipv4, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), address);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), "");
 
-                ret = g_variant_lookup (ipv4, "Netmask", "s", &netmask);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Netmask", "&s", &netmask))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), netmask);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), "");
 
-                ret = g_variant_lookup (ipv4, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), gateway);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), "");
         } else if (!g_strcmp0 (method, "fixed")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv4_method")), 2);
 
-                ret = g_variant_lookup (ipv4, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), address);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_address")), "");
 
-                ret = g_variant_lookup (ipv4, "Netmask", "s", &netmask);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Netmask", "&s", &netmask))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), netmask);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_netmask")), "");
 
-                ret = g_variant_lookup (ipv4, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv4, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), gateway);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv4_gateway")), "");
@@ -1040,6 +1041,7 @@ service_set_ipv4 (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 g_warning ("Could not set ipv4: %s", error->message);
@@ -1069,6 +1071,7 @@ editor_set_ipv4 (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         active = gtk_combo_box_get_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv4_method")));
 
@@ -1213,8 +1216,7 @@ editor_update_ipv6 (NetConnectionEditor *editor)
         GtkTreePath *tree_path;
         GtkTreeIter iter;
 
-        gboolean ret;
-        gchar *method, *address, *gateway, *privacy;
+        gchar *method, *address, *gateway, *privacy, *entry_text;
         GVariant *ipv6;
         guint8 prefix;
 
@@ -1225,9 +1227,9 @@ editor_update_ipv6 (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_IPV6, &ipv6,
                             -1);
+        gtk_tree_path_free (tree_path);
 
-        ret = g_variant_lookup (ipv6, "Method", "s", &method);
-        if (!ret)
+        if (!g_variant_lookup (ipv6, "Method", "&s", &method))
                 method = "off";
 
         if (!g_strcmp0 (method, "off"))
@@ -1235,8 +1237,7 @@ editor_update_ipv6 (NetConnectionEditor *editor)
         else if (!g_strcmp0 (method, "auto")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_method")), 1);
 
-                ret = g_variant_lookup (ipv6, "Privacy", "s", &privacy);
-                if (!ret)
+                if (!g_variant_lookup (ipv6, "Privacy", "&s", &privacy))
                         privacy = "disabled";
 
                 if (!g_strcmp0 (privacy , "enabled"))
@@ -1246,66 +1247,66 @@ editor_update_ipv6 (NetConnectionEditor *editor)
                 else
                         gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_privacy")), 1);
 
-                ret = g_variant_lookup (ipv6, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), address);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), "");
 
-                ret = g_variant_lookup (ipv6, "PrefixLength", "y", &prefix);
-                if (ret)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), g_strdup_printf ("%i", prefix));
+                if (g_variant_lookup (ipv6, "PrefixLength", "y", &prefix)) {
+                        entry_text = g_strdup_printf ("%i", prefix);
+                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), entry_text);
+                        g_free (entry_text);
+                }
 
-                ret = g_variant_lookup (ipv6, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), gateway);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), "");
         } else if (!g_strcmp0 (method, "manual")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_method")), 2);
 
-                ret = g_variant_lookup (ipv6, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), address);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), "");
 
-                ret = g_variant_lookup (ipv6, "PrefixLength", "y", &prefix);
-                if (ret)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), g_strdup_printf ("%i", prefix));
+                if (g_variant_lookup (ipv6, "PrefixLength", "y", &prefix)) {
+                        entry_text = g_strdup_printf ("%i", prefix);
+                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), entry_text);
+                        g_free (entry_text);
+                }
 
-                ret = g_variant_lookup (ipv6, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), gateway);
                 else
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), "");
         } else if (!g_strcmp0 (method, "6to4")) {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_method")), 3);
 
-                ret = g_variant_lookup (ipv6, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), address);
 
-                ret = g_variant_lookup (ipv6, "PrefixLength", "y", &prefix);
-                if (ret)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), g_strdup_printf ("%i", prefix));
+                if (g_variant_lookup (ipv6, "PrefixLength", "y", &prefix)) {
+                        entry_text = g_strdup_printf ("%i", prefix);
+                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), entry_text);
+                        g_free (entry_text);
+                }
 
-                ret = g_variant_lookup (ipv6, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), gateway);
         } else { /* fixed */
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_method")), 2);
 
-                ret = g_variant_lookup (ipv6, "Address", "s", &address);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Address", "&s", &address))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_address")), address);
 
-                ret = g_variant_lookup (ipv6, "PrefixLength", "y", &prefix);
-                if (ret)
-                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), g_strdup_printf ("%i", prefix));
+                if (g_variant_lookup (ipv6, "PrefixLength", "y", &prefix)) {
+                        entry_text = g_strdup_printf ("%i", prefix);
+                        gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_prefix")), entry_text);
+                        g_free (entry_text);
+                }
 
-                ret = g_variant_lookup (ipv6, "Gateway", "s", &gateway);
-                if (ret)
+                if (g_variant_lookup (ipv6, "Gateway", "&s", &gateway))
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "ipv6_gateway")), gateway);
         }
 
@@ -1344,6 +1345,7 @@ service_set_ipv6 (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 g_warning ("Could not set ipv6: %s", error->message);
@@ -1374,6 +1376,7 @@ editor_set_ipv6 (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         active = gtk_combo_box_get_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_ipv6_method")));
 
@@ -1449,13 +1452,17 @@ editor_update_domains (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_DOMAINS, &domains,
                             -1);
+        gtk_tree_path_free (tree_path);
 
-        dom = g_variant_get_strv (domains, NULL);
-        if (dom && dom[0])
-                gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_domains")), g_strjoinv (",", (gchar **) dom));
-        else
+        dom = (gchar **) g_variant_get_strv (domains, NULL);
+        if (dom && dom[0]) {
+                gchar *entry_text = g_strjoinv (",", dom);
+                gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_domains")), entry_text);
+                g_free (entry_text);
+        } else
                 gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_domains")), "");
 
+        g_free (dom);
         editor->update_domains = FALSE;
         net_connection_editor_update_apply (editor);
 }
@@ -1484,6 +1491,7 @@ service_set_domains (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 g_warning ("Could not set domains: %s", error->message);
@@ -1512,12 +1520,14 @@ editor_set_domains (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "entry_domains")));
         if (str)
                 domains = g_strsplit (str, ",", -1);
 
         value = g_variant_new_strv ((const gchar * const *) domains, -1);
+        g_strfreev (domains);
 
         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_domains")), "");
 
@@ -1567,13 +1577,17 @@ editor_update_nameservers (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_NAMESERVERS, &nameservers,
                             -1);
+        gtk_tree_path_free (tree_path);
 
-        dom = g_variant_get_strv (nameservers, NULL);
-        if (dom && dom[0])
-                gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")), g_strjoinv (",", (gchar **) dom));
-        else
+        dom = (gchar **) g_variant_get_strv (nameservers, NULL);
+        if (dom && dom[0]) {
+                gchar *entry_text = g_strjoinv (",", dom);
+                gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")), entry_text);
+                g_free (entry_text);
+        } else
                 gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")), "");
 
+        g_free (dom);
         editor->update_nameservers = FALSE;
         net_connection_editor_update_apply (editor);
 }
@@ -1602,6 +1616,7 @@ service_set_nameservers (GObject      *source,
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         if (!service_call_set_property_finish (service, res, &error)) {
                 g_warning ("Could not set nameservers: %s", error->message);
@@ -1630,6 +1645,7 @@ editor_set_nameservers (NetConnectionEditor *editor)
         gtk_tree_model_get (model, &iter,
                             COLUMN_GDBUSPROXY, &service,
                             -1);
+        gtk_tree_path_free (tree_path);
 
         str = (gchar *) gtk_entry_get_text (GTK_ENTRY (WID (editor->builder, "entry_nameservers")));
         if (str) {
