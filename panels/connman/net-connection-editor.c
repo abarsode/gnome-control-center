@@ -598,8 +598,8 @@ editor_update_proxy (NetConnectionEditor *editor)
         } else {
                 gtk_combo_box_set_active (GTK_COMBO_BOX (WID (editor->builder, "comboboxtext_proxy_method")), 2);
 
-                g_variant_lookup (proxy, "Servers", "as", &servers);
-                g_variant_lookup (proxy, "Excludes", "as", &excludes);
+                g_variant_lookup (proxy, "Servers", "^a&s", &servers);
+                g_variant_lookup (proxy, "Excludes", "^a&s", &excludes);
 
                 if (servers != NULL) {
                         gint i, port = 0;
@@ -642,14 +642,14 @@ editor_update_proxy (NetConnectionEditor *editor)
                                 }
                         }
 
-                        g_strfreev (servers);
+                        g_free (servers);
                 }
 
                 if (excludes != NULL) {
                         entry_text = g_strjoinv (",", excludes);
                         gtk_entry_set_text (GTK_ENTRY (WID (editor->builder, "proxy_excludes")), entry_text);
                         g_free (entry_text);
-                        g_strfreev (excludes);
+                        g_free (excludes);
                 }
 
         }

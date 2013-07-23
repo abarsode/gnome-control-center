@@ -1560,7 +1560,7 @@ cc_add_service (const gchar         *path,
         domains = g_variant_lookup_value (properties, "Domains", G_VARIANT_TYPE_STRING_ARRAY);
 
         if (!g_strcmp0 (type, "wifi"))
-                g_variant_lookup (properties, "Security", "as", &security);
+                g_variant_lookup (properties, "Security", "^a&s", &security);
 
         if (!g_strcmp0 (type, "wifi") || !g_strcmp0 (type, "cellular"))
                 g_variant_lookup (properties, "Strength", "y", &strength);
@@ -1653,7 +1653,7 @@ cc_add_service (const gchar         *path,
 
 out:
         g_free (name);
-        g_strfreev (security);
+        g_free (security);
 }
 
 static void
