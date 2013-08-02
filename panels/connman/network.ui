@@ -705,7 +705,6 @@
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkButton" id="button_vpn">
-                            <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="valign">end</property>
